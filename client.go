@@ -3,8 +3,8 @@ package payrail
 import (
 	"errors"
 
-	"payrail/core"
-	"payrail/provider/lenco"
+	"github.com/chawadev/payrail/core"
+	"github.com/chawadev/payrail/provider/lenco"
 )
 
 // Client is a thin wrapper around a concrete payment provider.  The

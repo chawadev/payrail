@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"payrail/core"
+
+	"github.com/chawadev/payrail/core"
 )
 
 // LencoProvider implements core.Provider and is configured with an API key

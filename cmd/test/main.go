@@ -3,8 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
-	"payrail"
-	"payrail/core"
+
+	"github.com/chawadev/payrail"
+	"github.com/chawadev/payrail/core"
 )
 
 func main() {

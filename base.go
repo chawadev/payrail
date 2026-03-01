@@ -2,7 +2,8 @@ package payrail
 
 import (
 	"errors"
-	"payrail/core"
+
+	"github.com/chawadev/payrail/core"
 )
 
 // Charge validates the request and forwards it to the configured provider.
