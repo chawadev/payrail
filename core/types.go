@@ -2,9 +2,19 @@ package core
 
 import "errors"
 
+// ChargeStatus represents the state of a payment after being sent to a provider.
+type ChargeStatus string
+
+const (
+	StatusPending    ChargeStatus = "pending"
+	StatusSuccessful ChargeStatus = "successful"
+	StatusFailed     ChargeStatus = "failed"
+	StatusPayOffline ChargeStatus = "pay-offline"
+)
+
 // ChargeResponse represents what comes back from provider
 type ChargeResponse struct {
-	Status        string
+	Status        string // one of the ChargeStatus constants above
 	TransactionID string
 	Reference     string
 	RawResponse   []byte
@@ -60,4 +70,22 @@ func (r ChargeRequest) Validate() error {
 	}
 
 	return nil
+}
+
+// StatusResponse represents the response from a status check query
+type StatusResponse struct {
+	Status           string // payment status: pending, successful, failed, pay-offline, 3ds-auth-required
+	TransactionID    string // provider's transaction ID
+	Reference        string // merchant reference
+	Amount           string
+	Currency         string
+	Fee              string
+	SettlementStatus string
+	ReasonForFailure string
+	RawResponse      []byte
+}
+
+// VeryfiRequest is used to query payment status
+type VeryfiRequest struct {
+	Reference string
 }

@@ -1,18 +1,28 @@
 package payrail
 
-import "net/http"
+import (
+	"errors"
 
+	"payrail/core"
+	"payrail/provider/lenco"
+)
+
+// Client is a thin wrapper around a concrete payment provider.  The
+// provider is chosen during construction and implements the core.Provider
+// interface.
 type Client struct {
-	APIKey     string
-	Provider   string
-	BaseURL    string
-	httpClient *http.Client
+	provider core.Provider
 }
 
-func NewClient(apiKey string, provider string) *Client {
-	return &Client{
-		APIKey:     apiKey,
-		Provider:   provider,
-		httpClient: &http.Client{},
+// NewClient creates a Payrail client bound to the named provider.  Currently
+// only "lenco" is supported; passing any other string returns an error.  The
+// apiKey argument will be forwarded to the provider's configuration.
+func NewClient(apiKey string, provider string) (*Client, error) {
+	switch provider {
+	case "lenco":
+		p := lenco.NewProvider(lenco.Config{APIKey: apiKey})
+		return &Client{provider: p}, nil
+	default:
+		return nil, errors.New("unsupported provider: " + provider)
 	}
 }
