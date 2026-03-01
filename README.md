@@ -17,7 +17,7 @@ go get github.com/chawadev/payrail
 ```go
 import (
     "github.com/chawadev/payrail"
-    "github.com/chawadev/payrail/core"
+    "github.com/chawadev/payrail/payrailCore"
 )
 
 // Create a client
@@ -131,56 +131,56 @@ case "failed":
 package main
 
 import (
-    "fmt"
-    "log"
-    "time"
-    "github.com/chawadev/payrail"
-    "github.com/chawadev/payrail/core"
+	"fmt"
+	"log"
+	"time"
+	"github.com/chawadev/payrail"
+	"github.com/chawadev/payrail/payrailCore"
 )
 
 func main() {
-    // Initialize
-    client, err := payrail.NewClient("your-api-key", "lenco")
-    if err != nil {
-        log.Fatal(err)
-    }
+	// Initialize
+	client, err := payrail.NewClient("your-api-key", "lenco")
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    // Request payment
-    charge := core.ChargeRequest{
-        Amount:     250.00,
-        Reference:  "order-2024-001",
-        Phone:      "+260769312808",
-        Operator:   core.OperatorMTN,
-        Country:    core.CountryZM,
-        Bearer:     core.BearerCustomer,
-        CustomerID: "user_456",
-    }
+	// Request payment
+	charge := core.ChargeRequest{
+		Amount:     250.00,
+		Reference:  "order-2024-001",
+		Phone:      "+260769312808",
+		Operator:   core.OperatorMTN,
+		Country:    core.CountryZM,
+		Bearer:     core.BearerCustomer,
+		CustomerID: "user_456",
+	}
 
-    chargeResp, err := client.Charge(charge)
-    if err != nil {
-        log.Fatal(err)
-    }
+	chargeResp, err := client.Charge(charge)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    fmt.Printf("✓ Charge requested\n")
-    fmt.Printf("  Status: %s\n", chargeResp.Status)
-    fmt.Printf("  Transaction: %s\n", chargeResp.TransactionID)
+	fmt.Printf("✓ Charge requested\n")
+	fmt.Printf("  Status: %s\n", chargeResp.Status)
+	fmt.Printf("  Transaction: %s\n", chargeResp.TransactionID)
 
-    // Wait a few seconds
-    time.Sleep(3 * time.Second)
+	// Wait a few seconds
+	time.Sleep(3 * time.Second)
 
-    // Check status
-    statusResp, err := client.Veryfi(chargeResp.Reference)
-    if err != nil {
-        log.Fatal(err)
-    }
+	// Check status
+	statusResp, err := client.Veryfi(chargeResp.Reference)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    fmt.Printf("\n✓ Status checked\n")
-    fmt.Printf("  Current Status: %s\n", statusResp.Status)
-    fmt.Printf("  Amount: %s %s\n", statusResp.Amount, statusResp.Currency)
+	fmt.Printf("\n✓ Status checked\n")
+	fmt.Printf("  Current Status: %s\n", statusResp.Status)
+	fmt.Printf("  Amount: %s %s\n", statusResp.Amount, statusResp.Currency)
 
-    if statusResp.Status == "successful" {
-        fmt.Printf("  Settlement: %s\n", statusResp.SettlementStatus)
-    }
+	if statusResp.Status == "successful" {
+		fmt.Printf("  Settlement: %s\n", statusResp.SettlementStatus)
+	}
 }
 ```
 

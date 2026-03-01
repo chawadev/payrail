@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/chawadev/payrail"
-	"github.com/chawadev/payrail/core"
+	"github.com/chawadev/payrail/payrailCore"
 )
 
 func main() {
@@ -17,13 +17,13 @@ func main() {
 
 	// Test 1: Charge a customer
 	fmt.Println("=== Testing Charge Endpoint ===")
-	chargeReq := core.ChargeRequest{
+	chargeReq := payrailCore.ChargeRequest{
 		Amount:     0.1,
-		Country:    core.CountryZM,
+		Country:    payrailCore.CountryZM,
 		Reference:  "test-ref-12345",
 		Phone:      "+260769312808",
-		Operator:   core.OperatorMTN,
-		Bearer:     core.BearerCustomer,
+		Operator:   payrailCore.OperatorMTN,
+		Bearer:     payrailCore.BearerCustomer,
 		CustomerID: "cus_12345",
 	}
 

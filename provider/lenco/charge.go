@@ -7,10 +7,10 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/chawadev/payrail/core"
+	"github.com/chawadev/payrail/payrailCore"
 )
 
-// LencoProvider implements core.Provider and is configured with an API key
+// LencoProvider implements payrailCore.Provider and is configured with an API key
 // and optional base URL.  It encapsulates all the details required to talk
 // to Lenco's mobile-money collection endpoint.
 
@@ -54,8 +54,8 @@ type lencoResponse struct {
 
 // Charge constructs a JSON request from the generic ChargeRequest, sends it to
 // the Lenco mobile‑money endpoint and translates the provider response into a
-// core.ChargeResponse.
-func (l *LencoProvider) Charge(req core.ChargeRequest) (*core.ChargeResponse, error) {
+// payrailCore.ChargeResponse.
+func (l *LencoProvider) Charge(req payrailCore.ChargeRequest) (*payrailCore.ChargeResponse, error) {
 	// build request body
 	payload := chargePayload{
 		Operator:  string(req.Operator),
@@ -101,7 +101,7 @@ func (l *LencoProvider) Charge(req core.ChargeRequest) (*core.ChargeResponse, er
 		return nil, err
 	}
 
-	return &core.ChargeResponse{
+	return &payrailCore.ChargeResponse{
 		Status:        lr.Data.Status,
 		TransactionID: lr.Data.ID,
 		Reference:     lr.Data.LencoReference,
@@ -111,7 +111,7 @@ func (l *LencoProvider) Charge(req core.ChargeRequest) (*core.ChargeResponse, er
 
 // Veryfi checks the status of a payment using the reference.  It queries
 // the Lenco status endpoint and returns the current payment state.
-func (l *LencoProvider) Veryfi(reference string) (*core.StatusResponse, error) {
+func (l *LencoProvider) Veryfi(reference string) (*payrailCore.StatusResponse, error) {
 	if reference == "" {
 		return nil, fmt.Errorf("reference cannot be empty")
 	}
@@ -145,7 +145,7 @@ func (l *LencoProvider) Veryfi(reference string) (*core.StatusResponse, error) {
 		return nil, err
 	}
 
-	return &core.StatusResponse{
+	return &payrailCore.StatusResponse{
 		Status:        lr.Data.Status,
 		TransactionID: lr.Data.ID,
 		Reference:     lr.Data.LencoReference,

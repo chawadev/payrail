@@ -3,15 +3,15 @@ package payrail
 import (
 	"errors"
 
-	"github.com/chawadev/payrail/core"
+	"github.com/chawadev/payrail/payrailCore"
 	"github.com/chawadev/payrail/provider/lenco"
 )
 
 // Client is a thin wrapper around a concrete payment provider.  The
-// provider is chosen during construction and implements the core.Provider
+// provider is chosen during construction and implements the payrailCore.Provider
 // interface.
 type Client struct {
-	provider core.Provider
+	provider payrailCore.Provider
 }
 
 // NewClient creates a Payrail client bound to the named provider.  Currently

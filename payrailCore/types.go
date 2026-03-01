@@ -1,4 +1,4 @@
-package core
+package payrailCore
 
 import "errors"
 
@@ -22,16 +22,11 @@ type ChargeResponse struct {
 
 type Operator string
 
-const (
-	OperatorAirtel Operator = "airtel"
-	OperatorMTN    Operator = "mtn"
-)
-
 type Country string
 
 const (
-	CountryZM Country = "zm"
-	CountryMW Country = "mw"
+	Zambia Country = "zm"
+	Malawi Country = "mw"
 )
 
 type Bearer string
@@ -45,7 +40,7 @@ type ChargeRequest struct {
 	Amount     float64
 	Reference  string
 	Phone      string
-	Operator   Operator
+	Operator   string
 	Country    Country
 	Bearer     Bearer
 	CustomerID string
