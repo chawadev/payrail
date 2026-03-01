@@ -1,327 +1,125 @@
 # Payrail - Go Payment Framework
 
-Payrail is a lightweight, developer-friendly **Go payment framework** that allows you to integrate multiple payment providers (like Lenco) with minimal effort. It handles **request validation**, **provider configuration**, and **response parsing**, so you can focus on building your application, not payment plumbing.
-
----
-
-## Features
-
-- Clean API for charging customers via mobile money
-- Built-in payment status verification
-- Automatic request validation
-- Comprehensive error handling with error codes
-- Configurable payment providers
-- Structured responses with transaction details
-- Extensible to multiple providers
+Lightweight payment framework for integrating mobile money providers (Lenco) into your Go applications.
 
 ---
 
 ## Installation
 
 ```bash
-go get github.com/yourusername/payrail
+go get github.com/chawadev/payrail
 ```
 
 ---
 
-## Quick Start
+## Setup
 
 ```go
-package main
-
 import (
-    "fmt"
-    "log"
-    "payrail"
-    "payrail/core"
+    "github.com/chawadev/payrail"
+    "github.com/chawadev/payrail/core"
 )
 
-func main() {
-    // Initialize client
-    client, err := payrail.NewClient("your-lenco-api-key", "lenco")
-    if err != nil {
-        log.Fatal(err)
-    }
-
-    // Request payment
-    chargeReq := core.ChargeRequest{
-        Amount:     0.50,
-        Reference:  "order-12345",
-        Phone:      "+260769312808",
-        Operator:   core.OperatorMTN,
-        Country:    core.CountryZM,
-        Bearer:     core.BearerCustomer,
-        CustomerID: "cus_456",
-    }
-
-    chargeResp, err := client.Charge(chargeReq)
-    if err != nil {
-        log.Fatal(err)
-    }
-
-    // Check payment status later
-    status, err := client.Veryfi(chargeResp.Reference)
-    if err != nil {
-        log.Fatal(err)
-    }
-
-    fmt.Printf("Payment Status: %s\n", status.Status)
+// Create a client
+client, err := payrail.NewClient("your-lenco-api-key", "lenco")
+if err != nil {
+    log.Fatal(err)
 }
 ```
 
 ---
 
-## 1. Charge Endpoint
+## 1. Request Payment (Charge)
 
-### Request Charge API
-
-Create a charge to request payment from a customer via mobile money.
-
-**Endpoint:** `POST https://api.lenco.co/access/v2/collections/mobile-money`
-
-#### Request Parameters
-
-| Field      | Type   | Required | Description |
-|-----------|--------|----------|-------------|
-| `operator` | string | Yes      | `"airtel"` or `"mtn"` |
-| `bearer`   | string | Yes      | `"merchant"` or `"customer"` (who pays fees) |
-| `amount`   | number | Yes      | Payment amount in local currency |
-| `reference` | string | Yes     | Unique transaction reference (min 6 chars) |
-| `country`  | string | Yes      | `"zm"` (Zambia) or `"mw"` (Malawi) |
-| `phone`    | string | Yes      | Recipient phone (e.g., `+260769312808`) |
-
-#### Go Code Example
+### What You Send
 
 ```go
 req := core.ChargeRequest{
-    Amount:     50.00,                   // ZMW/MWK
-    Reference:  "order-20260301-001",    // Your unique ID
-    Phone:      "+260769312808",         // Customer phone
-    Operator:   core.OperatorMTN,        // or OperatorAirtel
-    Country:    core.CountryZM,          // or CountryMW
-    Bearer:     core.BearerCustomer,     // or BearerMerchant
-    CustomerID: "cus_78910",             // Your customer ID
+    Amount:     100.00,                    // Payment amount
+    Reference:  "order-INV-2024-001",      // Your unique ID (6+ chars)
+    Phone:      "+260769312808",          // Customer phone
+    Operator:   core.OperatorMTN,         // OperatorMTN or OperatorAirtel
+    Country:    core.CountryZM,           // CountryZM or CountryMW
+    Bearer:     core.BearerCustomer,      // Who pays fee: BearerCustomer or BearerMerchant
+    CustomerID: "customer-123",           // Your internal customer ID
 }
 
 resp, err := client.Charge(req)
 if err != nil {
     log.Fatal(err)
 }
+```
 
-fmt.Println("Status:", resp.Status)       // pending, successful, failed, pay-offline
+### What You Get Back
+
+**Success Response:**
+```go
+ChargeResponse{
+    Status:        "pending",                      // pending, successful, failed, pay-offline
+    TransactionID: "49b9628d-b5cd-41c8-bd1e-98b6591360f5",  // Lenco's ID
+    Reference:     "2606007027",                  // Use this for status checks
+    RawResponse:   // Raw JSON bytes for debugging
+}
+```
+
+**Print the response:**
+```go
+fmt.Println("Status:", resp.Status)
 fmt.Println("Transaction ID:", resp.TransactionID)
 fmt.Println("Lenco Reference:", resp.Reference)
 ```
 
-#### JSON Request Body
+### Field Guide
 
-```json
-{
-  "operator": "mtn",
-  "bearer": "customer",
-  "amount": 50.00,
-  "reference": "order-20260301-001",
-  "country": "zm",
-  "phone": "+260769312808"
-}
-```
-
-#### Response Fields
-
-```go
-type ChargeResponse struct {
-    Status        string // "pending" | "successful" | "failed" | "pay-offline"
-    TransactionID string // Lenco's collection ID
-    Reference     string // Lenco's internal reference for tracking
-    RawResponse   []byte // Raw JSON response for debugging
-}
-```
-
-#### Example Response
-
-```json
-{
-  "status": true,
-  "message": "Mobile money request initiated",
-  "data": {
-    "id": "coll_abc123xyz",
-    "initiatedAt": "2026-03-01T14:30:00Z",
-    "completedAt": null,
-    "amount": "50.00",
-    "fee": null,
-    "bearer": "customer",
-    "currency": "ZMW",
-    "reference": "order-20260301-001",
-    "lencoReference": "lref_789def456",
-    "type": "mobile-money",
-    "status": "pending",
-    "source": "api",
-    "reasonForFailure": null,
-    "settlementStatus": null,
-    "settlement": null,
-    "mobileMoneyDetails": {
-      "country": "zm",
-      "phone": "+260769312808",
-      "operator": "mtn",
-      "accountName": "John Doe",
-      "operatorTransactionId": "mtn_txn_ref_123"
-    },
-    "bankAccountDetails": null,
-    "cardDetails": null
-  }
-}
-```
+| Field | Options | Example |
+|-------|---------|---------|
+| `Amount` | Any positive number | `100.00`, `0.50` |
+| `Reference` | 6+ unique alphanumeric | `order-12345`, `INV-2024-001` |
+| `Phone` | International format | `+260769312808`, `+265989123456` |
+| `Operator` | `OperatorMTN` `OperatorAirtel` | `core.OperatorMTN` |
+| `Country` | `CountryZM` `CountryMW` | `core.CountryZM` |
+| `Bearer` | `BearerCustomer` `BearerMerchant` | `core.BearerCustomer` |
+| `CustomerID` | Your system's customer ID | `cus_abc123` |
 
 ---
 
-## 2. Veryfi (Status Check) Endpoint
+## 2. Check Payment Status (Veryfi)
 
-### Verify Payment Status
-
-Query the current status of a payment request using its reference.
-
-**Endpoint:** `GET https://api.lenco.co/access/v2/collections/status/{reference}`
-
-#### Path Parameters
-
-| Parameter | Type   | Required | Description |
-|-----------|--------|----------|-------------|
-| `reference` | string | Yes      | Lenco reference from charge response |
-
-#### Go Code Example
+### What You Send
 
 ```go
-// After charging, verify the status
-statusResp, err := client.Veryfi(chargeResp.Reference)
+// Use the Lenco Reference from the charge response
+statusResp, err := client.Veryfi("2606007027")
 if err != nil {
     log.Fatal(err)
 }
+```
 
+### What You Get Back
+
+```go
+StatusResponse{
+    Status:           "successful",     // pending, successful, failed, pay-offline, 3ds-auth-required
+    TransactionID:    "49b9628d-b5cd-41c8-bd1e-98b6591360f5",
+    Reference:        "2606007027",
+    Amount:           "100.00",
+    Currency:         "ZMW",
+    Fee:              "2.50",
+    SettlementStatus: "pending",        // pending, settled, null
+    ReasonForFailure: "",               // Only if status is failed
+    RawResponse:      // Raw JSON for debugging
+}
+```
+
+**Check status:**
+```go
 switch statusResp.Status {
 case "pending":
-    fmt.Println("Waiting for customer confirmation")
+    fmt.Println("Waiting for customer...")
 case "successful":
-    fmt.Println("Payment received! Settlement status:", statusResp.SettlementStatus)
+    fmt.Println("Payment received! Amount:", statusResp.Amount, statusResp.Currency)
 case "failed":
     fmt.Println("Payment failed:", statusResp.ReasonForFailure)
-case "pay-offline":
-    fmt.Println("Customer needs to complete payment offline")
-case "3ds-auth-required":
-    fmt.Println("3DS authentication required")
-}
-```
-
-#### Response Fields
-
-```go
-type StatusResponse struct {
-    Status           string // "pending" | "successful" | "failed" | "pay-offline" | "3ds-auth-required"
-    TransactionID    string // Lenco's collection ID
-    Reference        string // Lenco's reference for tracking
-    Amount           string // Payment amount
-    Currency         string // Currency code (e.g., "ZMW")
-    Fee              string // Transaction fee
-    SettlementStatus string // "pending" | "settled" | null
-    ReasonForFailure string // Error message if failed
-    RawResponse      []byte // Raw JSON for debugging
-}
-```
-
-#### Example Response
-
-```json
-{
-  "status": true,
-  "message": "Collection found",
-  "data": {
-    "id": "coll_abc123xyz",
-    "initiatedAt": "2026-03-01T14:30:00Z",
-    "completedAt": "2026-03-01T14:35:00Z",
-    "amount": "50.00",
-    "fee": "0.50",
-    "bearer": "customer",
-    "currency": "ZMW",
-    "reference": "order-20260301-001",
-    "lencoReference": "lref_789def456",
-    "type": "mobile-money",
-    "status": "successful",
-    "source": "api",
-    "reasonForFailure": null,
-    "settlementStatus": "pending",
-    "settlement": {
-      "id": "sett_xyz789",
-      "amountSettled": "49.50",
-      "currency": "ZMW",
-      "createdAt": "2026-03-01T14:35:00Z",
-      "settledAt": null,
-      "status": "pending",
-      "type": "next-day",
-      "accountId": "acc_12345"
-    },
-    "mobileMoneyDetails": {
-      "country": "zm",
-      "phone": "+260769312808",
-      "operator": "mtn",
-      "accountName": "John Doe",
-      "operatorTransactionId": "mtn_txn_ref_123"
-    },
-    "bankAccountDetails": null,
-    "cardDetails": null
-  }
-}
-```
-
----
-
-## Error Handling
-
-Payrail provides comprehensive error handling with structured error codes:
-
-```go
-import "payrail/core"
-
-resp, err := client.Charge(req)
-if err != nil {
-    // Handle different error types
-    if payErr, ok := err.(*core.PaymentError); ok {
-        switch payErr.Code {
-        case core.ErrCodeValidation:
-            fmt.Println("Invalid request:", payErr.Message)
-        case core.ErrCodeProvider:
-            fmt.Println("Provider error:", payErr.Message)
-        case core.ErrCodeNetwork:
-            fmt.Println("Network error:", payErr.Message)
-        }
-    }
-}
-```
-
-### Error Codes
-
-| Code | Level | Meaning |
-|------|-------|---------|
-| `VALIDATION_ERROR` | Error | Request validation failed |
-| `PROVIDER_ERROR` | Error | Provider API returned an error |
-| `NETWORK_ERROR` | Error | Network connectivity issue |
-| `PARSING_ERROR` | Error | Failed to parse response |
-| `NOT_FOUND` | Error | Resource not found |
-| `UNAUTHORIZED` | Error | API key invalid |
-| `INTERNAL_ERROR` | Error | Unexpected framework error |
-
-### Error Logger
-
-Use the built-in error logger for structured logging:
-
-```go
-logger := core.NewErrorLogger()
-
-// Log different severity levels
-logger.LogErrorf(core.ErrorLevelInfo, "Payment initiated for reference %s", ref)
-logger.LogErrorf(core.ErrorLevelWarning, "Slow response from provider")
-
-// Log PaymentError with code
-if payErr, ok := err.(*core.PaymentError); ok {
-    logger.LogError(payErr)
 }
 ```
 
@@ -335,123 +133,172 @@ package main
 import (
     "fmt"
     "log"
-    "payrail"
-    "payrail/core"
     "time"
+    "github.com/chawadev/payrail"
+    "github.com/chawadev/payrail/core"
 )
 
 func main() {
-    logger := core.NewErrorLogger()
-
-    // 1. Initialize client
+    // Initialize
     client, err := payrail.NewClient("your-api-key", "lenco")
     if err != nil {
-        logger.Fatalf("Failed to create client: %v", err)
+        log.Fatal(err)
     }
 
-    // 2. Request charge
+    // Request payment
     charge := core.ChargeRequest{
-        Amount:     100.00,
-        Reference:  fmt.Sprintf("order-%d", time.Now().Unix()),
+        Amount:     250.00,
+        Reference:  "order-2024-001",
         Phone:      "+260769312808",
         Operator:   core.OperatorMTN,
         Country:    core.CountryZM,
         Bearer:     core.BearerCustomer,
-        CustomerID: "cus_user_789",
+        CustomerID: "user_456",
     }
 
-    resp, err := client.Charge(charge)
+    chargeResp, err := client.Charge(charge)
     if err != nil {
-        logger.LogErrorf(core.ErrorLevelError, "Charge failed: %v", err)
-        return
+        log.Fatal(err)
     }
 
-    logger.LogErrorf(core.ErrorLevelInfo, "Charge created: %s (Status: %s)", 
-        resp.TransactionID, resp.Status)
+    fmt.Printf("✓ Charge requested\n")
+    fmt.Printf("  Status: %s\n", chargeResp.Status)
+    fmt.Printf("  Transaction: %s\n", chargeResp.TransactionID)
 
-    // 3. Poll status (in production, use webhooks instead)
-    for attempt := 0; attempt < 5; attempt++ {
-        time.Sleep(2 * time.Second)
+    // Wait a few seconds
+    time.Sleep(3 * time.Second)
 
-        status, err := client.Veryfi(resp.Reference)
-        if err != nil {
-            logger.LogErrorf(core.ErrorLevelWarning, "Status check failed: %v", err)
-            continue
-        }
+    // Check status
+    statusResp, err := client.Veryfi(chargeResp.Reference)
+    if err != nil {
+        log.Fatal(err)
+    }
 
-        logger.LogErrorf(core.ErrorLevelInfo, "Payment status: %s", status.Status)
+    fmt.Printf("\n✓ Status checked\n")
+    fmt.Printf("  Current Status: %s\n", statusResp.Status)
+    fmt.Printf("  Amount: %s %s\n", statusResp.Amount, statusResp.Currency)
 
-        if status.Status == "successful" {
-            fmt.Printf("✓ Payment received! Amount: %s %s\n", 
-                status.Amount, status.Currency)
-            break
-        } else if status.Status == "failed" {
-            fmt.Printf("✗ Payment failed: %s\n", status.ReasonForFailure)
-            break
-        }
+    if statusResp.Status == "successful" {
+        fmt.Printf("  Settlement: %s\n", statusResp.SettlementStatus)
     }
 }
 ```
 
----
-
-## Request Validation
-
-All requests are automatically validated before sending to the provider:
-
-```go
-type ChargeRequest struct {
-    Amount    float64 // Must be > 0
-    Reference string  // Required, minimum 6 characters
-    Phone     string  // Required
-    Operator  Operator // Required (airtel or mtn)
-    Country   Country  // Required (zm or mw)
-    Bearer    Bearer   // Required (merchant or customer)
-    CustomerID string  // Required
-}
+**Output:**
 ```
+✓ Charge requested
+  Status: pending
+  Transaction: 49b9628d-b5cd-41c8-bd1e-98b6591360f5
 
-Validation happens automatically in `client.Charge()`. Invalid requests return a validation error immediately without hitting the network.
+✓ Status checked
+  Current Status: successful
+  Amount: 250.00 ZMW
+  Settlement: pending
+```
 
 ---
 
-## Adding More Providers
+## Error Handling
 
-To add a new provider (e.g., Duo Payment):
-
-1. Create a provider package:
 ```go
-// provider/duo/charge.go
-package duo
+resp, err := client.Charge(req)
+if err != nil {
+    // Handle error
+    if payErr, ok := err.(*core.PaymentError); ok {
+        fmt.Printf("Error Code: %s\n", payErr.Code)
+        fmt.Printf("Message: %s\n", payErr.Message)
 
-type DuoProvider struct {
-    config Config
-}
-
-func (d *DuoProvider) Charge(req core.ChargeRequest) (*core.ChargeResponse, error) {
-    // Implementation
-}
-
-func (d *DuoProvider) Veryfi(reference string) (*core.StatusResponse, error) {
-    // Implementation
+        switch payErr.Code {
+        case core.ErrCodeValidation:
+            fmt.Println("Request validation failed")
+        case core.ErrCodeNetwork:
+            fmt.Println("Network error - retry later")
+        case core.ErrCodeProvider:
+            fmt.Println("Provider error")
+        }
+    }
 }
 ```
 
-2. Wire it in `client.go`:
-```go
-case "duo":
-    p := duo.NewProvider(duo.Config{APIKey: apiKey})
-    return &Client{provider: p}, nil
-```
+### Common Errors
 
-3. Document the provider in README
+| Error | Cause | Fix |
+|-------|-------|-----|
+| `customer ID is required` | Missing CustomerID | Add `CustomerID: "your_id"` |
+| `reference too short` | Reference < 6 characters | Use longer reference |
+| `amount must be greater than zero` | Amount ≤ 0 | Set `Amount > 0` |
+| `Duplicate reference` | Reference already used | Use unique reference |
 
 ---
 
-## Why Payrail
+## Validation
 
-✅ **Safe** - Automatic validation prevents invalid payments  
-✅ **Simple** - One call to `Charge()` or `Veryfi()` handles all logic  
-✅ **Structured** - Error codes and types for programmatic handling  
-✅ **Extensible** - Add providers without breaking existing code  
-✅ **Developer-friendly** - Clean API, clear documentation
+All requests are validated before sending:
+- ✓ Amount > 0
+- ✓ Reference length ≥ 6 chars
+- ✓ CustomerID not empty
+- ✓ Phone format valid
+- ✓ Operator is valid
+- ✓ Country is valid
+- ✓ Bearer is valid
+
+Invalid requests fail instantly without network calls.
+
+---
+
+## Status Values
+
+**Payment Status:**
+- `pending` - Awaiting customer confirmation
+- `successful` - Payment received
+- `failed` - Payment declined
+- `pay-offline` - Customer needs to pay manually
+- `3ds-auth-required` - Additional authentication needed
+
+**Settlement Status:**
+- `pending` - Funds not yet settled
+- `settled` - Funds received
+- `null` - Not applicable (still processing)
+
+---
+
+## Tips
+
+1. **Always use unique references** - Duplicate references will be rejected
+2. **Store the Transaction ID** - Keep `TransactionID` for your records
+3. **Use Veryfi for polling** - Check status periodically or use webhooks
+4. **Handle all statuses** - Some payments go to "pay-offline" state
+5. **Retry on network errors** - Implement backoff for transient failures
+
+---
+
+## What Lenco Actually Receives
+
+When you call `client.Charge()`, these fields are sent to Lenco:
+
+```json
+{
+  "operator": "mtn",
+  "bearer": "customer",
+  "amount": 100.00,
+  "reference": "order-2024-001",
+  "country": "zm",
+  "phone": "+260769312808"
+}
+```
+
+When you call `client.Veryfi()`, a GET request is sent:
+```
+GET /access/v2/collections/status/2606007027
+Authorization: Bearer your-api-key
+```
+
+---
+
+## Support
+
+For issues or questions:
+1. Check error messages and codes
+2. Verify all required fields are present
+3. Ensure API key is valid
+4. Check phone number format (must include country code)
