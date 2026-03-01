@@ -37,23 +37,18 @@ const (
 )
 
 type ChargeRequest struct {
-	Amount     float64
-	Reference  string
-	Phone      string
-	Operator   string
-	Country    Country
-	Bearer     Bearer
-	CustomerID string
+	Amount    float64
+	Reference string
+	Phone     string
+	Operator  string
+	Country   Country
+	Bearer    Bearer
 }
 
 // Validate ensures the request is safe before sending to provider
 func (r ChargeRequest) Validate() error {
 	if r.Amount <= 0 {
 		return errors.New("amount must be greater than zero")
-	}
-
-	if r.CustomerID == "" {
-		return errors.New("customer ID is required")
 	}
 
 	if r.Reference == "" {
